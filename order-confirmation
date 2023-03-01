@@ -1,0 +1,127 @@
+    
+    {% comment %}  <!-- END GTM Transaction dataLayer--> {% endcomment %}
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-CHANGEME');</script>
+        <!-- End Google Tag Manager -->
+
+{% comment %} <!-- GTM Transaction dataLayer--> {% endcomment %}
+{% if first_time_accessed %}
+<script> window.addEventListener('load', function(){ window.dataLayer = window.dataLayer || []; 
+    window.dataLayer.push({ 
+    {% if shop.customer_accounts_enabled %}
+    {% if customer %} 
+    'user_id'        : {{customer.id | json}},
+    'customerEmail' : {{customer.email | json}},
+    'logState'      : "Logged In",
+    'customer_info'  : {
+    'firstName'   : {{customer_address.first_name | json}},
+    'lastName'    : {{customer_address.last_name | json}},
+    'address1'    : {{customer_address.address1 | json}},
+    'address2'    : {{customer_address.address2 | json}},
+    'street'      : {{customer_address.street | json}},
+    'city'        : {{customer_address.city | json}},
+    'province'    : {{customer_address.province | json}},
+    'zip'         : {{customer_address.zip | json}},
+    'country'     : {{customer_address.country | json}},
+    'phone'       : {{customer_address.phone | json}},
+    'customer_order_count' : {{customer.orders_count | json}},
+    'customer_total_spent'  : {{customer.total_spent | money_without_currency | remove: "," | json}}
+    },
+    {% else %}
+    'logState' : "Logged Out",
+    {% endif %}
+    {% endif %}
+    'customerEmail' : {{customer.email | json}},
+    {% if customer.orders_count > 1 %}
+    'customer_type'       : 'Returning',
+    {% else %}
+    'customer_type'       : 'New',
+    {% endif %}
+    'checkoutEmail' : {{checkout.email | json}},
+    'currency'      : {{shop.currency | json}},
+    'event'         : 'rgd_log_state'
+    });
+    
+    
+    
+    {% if order.line_items %}
+    var rgd_lineItems = {{order.line_items | json}};
+     {% else %}
+    var rgd_lineItems = Shopify.checkout.line_items;
+    {% endif %}
+    
+    {% if order.order_name %}
+      var rgd_order_id = '{{ order.order_name }}';
+    {% elsif order.order_number %}
+      var rgd_order_id = '{{ order.order_number }}';
+    {% else %}
+      var rgd_order_id = Shopify.checkout.order_id;
+    {% endif %}
+    
+    
+    try {
+      if (Shopify.checkout.discount == null) {
+        var rgd_coupon = '';
+      } else {
+        var rgd_coupon = Shopify.checkout.discount.code;
+      }
+    } catch (error) {
+      if (error instanceof ReferenceError) {
+        var rgd_coupon = '';
+      } else {
+        throw error;
+      }
+    }
+    
+    window.dataLayer.push({ 
+    "page_type": "purchase",
+    "event": "rgd_purchase", 
+    "ecommerce": {
+    "currency": Shopify.checkout.currency,
+    "transaction_id": rgd_order_id,
+    "value": {{ order.total_price | times: 0.01 }},
+    "checkout_total_price": {{checkout.total_price | money_without_currency | remove: ',' }},
+    "revenue": {{total_price | times: 0.01}},
+    "total_price": {{checkout.total_price | money_without_currency | remove: ',' }},
+    "tax": {{order.tax_price | times: 0.01 | default: 0 }},
+    "shipping": {{order.shipping_price | times: 0.01 | default: 0}},
+    "shipping_tier": "{{ checkout.shipping_method.title }}",
+    "payment_type": "{{ transaction.payment_details.credit_card_company }}",
+    "affiliation": "{{ shop.name }}",
+    "discount": "{{ checkout.discounts_amount | money_without_currency }}",
+    "coupon": rgd_coupon,
+    
+    {% if order.line_items %}
+        "items": rgd_lineItems.map(function(item, idx) { 
+          return { 
+            "item_id": item.product.id,
+            "item_name": item.product.title,
+            "item_brand": item.vendor,
+            "item_category": item.product.product_type,
+            "item_variant": item.variant.id,
+            "price": item.price,
+            "quantity": item.quantity,
+          }
+        })
+      {% else %}
+          "items": rgd_lineItems.map(function(item, idx) { 
+            return { 
+            "item_id": item.product_id,
+            "item_name": item.title,
+            "item_brand": item.vendor,
+            "item_variant": item.variant_id,
+            "price": item.price,
+            "quantity": item.quantity,
+            }
+          })
+      {% endif %}
+      } }); 
+    }, false); 
+    
+    </script> 
+{% endif %}
+{% comment %} <!-- GTM Transaction dataLayer--> {% endcomment %}
